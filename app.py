@@ -81,7 +81,7 @@ def run_simulation(params):
     Factor_Emision_Ternero, Factor_Emision_Novillo, Factor_Emision_Toro = 0.5, 1.8, 2.8
     
     # Tiempos de maduración
-    Tiempo_Maduracion_Ternera = (Peso_Final_Ternera_H - Peso_Inicial_Ternera_H) / params['ganancia_peso_diario_ternera_h'] if params['ganancia_peso_diario_ternera_h'] > 0 else float('inf')
+    Tiempo_Maduracion_Ternera = (Peso_Final_Ternera_H - params['ganancia_peso_diario_ternera_h']) / params['ganancia_peso_diario_ternera_h'] if params['ganancia_peso_diario_ternera_h'] > 0 else float('inf')
     Tiempo_Maduracion_Novilla = (params['peso_final_novilla'] - params['peso_inicial_novilla']) / params['ganancia_peso_diario_novilla'] if params['ganancia_peso_diario_novilla'] > 0 else float('inf')
     Tiempo_Maduracion_Ternero_a_Novillo = (params['peso_final_ternero_m'] - params['peso_inicial_ternero_m']) / params['ganancia_peso_diario_ternero_m'] if params['ganancia_peso_diario_ternero_m'] > 0 else float('inf')
     Tiempo_Maduracion_Novillo_a_Toro = (params['peso_final_novillo_m'] - params['peso_inicial_novillo_m']) / params['ganancia_peso_diario_novillo_m'] if params['ganancia_peso_diario_novillo_m'] > 0 else float('inf')
@@ -207,12 +207,7 @@ with col2:
 st.markdown("---")
 st.header('Visualización Comparativa de Escenarios')
 
-# --- CREACIÓN DE GRÁFICOS COMPARATIVOS ---
-fig = make_subplots(
-    rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.1,
-    subplot_titles=('Población de Hembras', 'Población de Machos', 'Emisiones Totales de GEI', 'Intensidad de Emisiones')
-)
-# AJUSTE: Eje X de 2025 a 2035
+# --- CREACIÓN DE GRÁFICOS COMPARATIVOS (SEPARADOS) ---
 plot_years = (base_results['tiempo'] / 365) + 2025
 
 # --- Paleta de colores definida ---
@@ -221,43 +216,56 @@ colors_machos = {'Terneros': '#1E90FF', 'Novillos': '#4169E1', 'Toros': '#000080
 color_emisiones = 'green'
 color_intensidad = 'firebrick'
 
+# --- Función auxiliar para dar estilo a las figuras ---
+def style_figure(fig, title, y_title, x_title=None, height=450, show_legend=True):
+    fig.update_layout(
+        title={'text': title, 'x': 0.5, 'xanchor': 'center'},
+        yaxis_title=y_title,
+        xaxis_title=x_title,
+        height=height,
+        template='plotly_white',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        showlegend=show_legend,
+        margin=dict(t=80) # Aumentar margen superior para que el título y la leyenda no se solapen
+    )
+    return fig
+
 # --- Gráfico 1: Hembras ---
+fig1 = go.Figure()
 for cat, color in colors_hembras.items():
-    fig.add_trace(go.Scatter(x=plot_years, y=base_results[cat], name=f'{cat} (Base)', mode='lines', line=dict(color=color, width=2), legendgroup='1'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_years, y=alt_results[cat], name=f'{cat} (Alt)', mode='lines', line=dict(color=color, width=3, dash='dash'), legendgroup='1'), row=1, col=1)
+    fig1.add_trace(go.Scatter(x=plot_years, y=base_results[cat], name=f'{cat} (Base)', mode='lines', line=dict(color=color, width=2)))
+    fig1.add_trace(go.Scatter(x=plot_years, y=alt_results[cat], name=f'{cat} (Alt)', mode='lines', line=dict(color=color, width=3, dash='dash')))
+style_figure(fig1, 'Población de Hembras', 'Número de Animales')
+st.plotly_chart(fig1, use_container_width=True)
 
 # --- Gráfico 2: Machos ---
+fig2 = go.Figure()
 for cat, color in colors_machos.items():
-    fig.add_trace(go.Scatter(x=plot_years, y=base_results[cat], name=f'{cat} (Base)', mode='lines', line=dict(color=color, width=2), legendgroup='2'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=plot_years, y=alt_results[cat], name=f'{cat} (Alt)', mode='lines', line=dict(color=color, width=3, dash='dash'), legendgroup='2'), row=2, col=1)
+    fig2.add_trace(go.Scatter(x=plot_years, y=base_results[cat], name=f'{cat} (Base)', mode='lines', line=dict(color=color, width=2)))
+    fig2.add_trace(go.Scatter(x=plot_years, y=alt_results[cat], name=f'{cat} (Alt)', mode='lines', line=dict(color=color, width=3, dash='dash')))
+style_figure(fig2, 'Población de Machos', 'Número de Animales')
+st.plotly_chart(fig2, use_container_width=True)
 
 # --- Gráfico 3: Emisiones ---
-# AJUSTE: Se plotea desde el índice 1 para evitar la línea vertical desde cero
-fig.add_trace(go.Scatter(x=plot_years[1:], y=base_results['Emisiones_Totales_GEI'][1:], name='Emisiones GEI (Base)', mode='lines', line=dict(color=color_emisiones, width=2), legendgroup='3'), row=3, col=1)
-fig.add_trace(go.Scatter(x=plot_years[1:], y=alt_results['Emisiones_Totales_GEI'][1:], name='Emisiones GEI (Alt)', mode='lines', line=dict(color=color_emisiones, width=3, dash='dash'), legendgroup='3'), row=3, col=1)
+fig3 = go.Figure()
+fig3.add_trace(go.Scatter(x=plot_years[1:], y=base_results['Emisiones_Totales_GEI'][1:], name='Emisiones GEI (Base)', mode='lines', line=dict(color=color_emisiones, width=2)))
+fig3.add_trace(go.Scatter(x=plot_years[1:], y=alt_results['Emisiones_Totales_GEI'][1:], name='Emisiones GEI (Alt)', mode='lines', line=dict(color=color_emisiones, width=3, dash='dash')))
+style_figure(fig3, 'Emisiones Totales de GEI', 'kg CO2-eq/día')
+st.plotly_chart(fig3, use_container_width=True)
 
 # --- Gráfico 4: Intensidad ---
-# AJUSTE: Se plotea desde el índice 1 para evitar la línea vertical desde cero
-fig.add_trace(go.Scatter(x=plot_years[1:], y=base_results['Intensidad_de_Emisiones'][1:], name='Intensidad (Base)', mode='lines', line=dict(color=color_intensidad, width=2), legendgroup='4'), row=4, col=1)
-fig.add_trace(go.Scatter(x=plot_years[1:], y=alt_results['Intensidad_de_Emisiones'][1:], name='Intensidad (Alt)', mode='lines', line=dict(color=color_intensidad, width=3, dash='dash'), legendgroup='4'), row=4, col=1)
+fig4 = go.Figure()
+fig4.add_trace(go.Scatter(x=plot_years[1:], y=base_results['Intensidad_de_Emisiones'][1:], name='Intensidad (Base)', mode='lines', line=dict(color=color_intensidad, width=2)))
+fig4.add_trace(go.Scatter(x=plot_years[1:], y=alt_results['Intensidad_de_Emisiones'][1:], name='Intensidad (Alt)', mode='lines', line=dict(color=color_intensidad, width=3, dash='dash')))
+style_figure(fig4, 'Intensidad de Emisiones', 'kg CO2-eq / kg Carne', x_title="Año")
+st.plotly_chart(fig4, use_container_width=True)
 
-# --- AJUSTE: Diseño de la figura y leyendas ---
-fig.update_layout(
-    height=1200, 
-    template='plotly_white',
-    legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=1.02,
-        xanchor="center",
-        x=0.5
-    ),
-    legend_tracegroupgap=50 # Añade espacio entre los grupos de leyendas
-)
-fig.update_yaxes(title_text="Número de Animales", row=1, col=1); fig.update_yaxes(title_text="Número de Animales", row=2, col=1)
-fig.update_yaxes(title_text="kg CO2-eq/día", row=3, col=1); fig.update_yaxes(title_text="kg CO2-eq / kg Carne", row=4, col=1)
-fig.update_xaxes(title_text="Año", row=4, col=1)
-st.plotly_chart(fig, use_container_width=True)
 
 # --- DESCARGA DE DATOS ---
 st.markdown("---")
@@ -269,7 +277,6 @@ df_alt = pd.DataFrame(alt_results)
 df_base = df_base.add_suffix('_Base')
 df_alt = df_alt.add_suffix('_Alternativo').drop(columns=['tiempo_Alternativo'])
 df_export = pd.concat([df_base, df_alt], axis=1)
-# AJUSTE: El índice del DataFrame exportado también será el año
 df_export['Año'] = (df_export['tiempo_Base'] / 365) + 2025
 df_export = df_export.drop(columns=['tiempo_Base']).set_index('Año')
 
@@ -278,7 +285,7 @@ df_export = df_export.drop(columns=['tiempo_Base']).set_index('Año')
 def convert_df_to_csv(df):
     return df.to_csv().encode('utf-8')
 
-# AJUSTE: Función para convertir a Excel
+# Función para convertir a Excel
 @st.cache_data
 def convert_df_to_excel(df):
     output = io.BytesIO()
