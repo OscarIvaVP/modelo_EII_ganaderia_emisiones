@@ -3,14 +3,13 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import io
 
 # --- CONFIGURACIÓN DE LA PÁGINA DE STREAMLIT ---
 st.set_page_config(layout="wide")
 st.title('Simulador Comparativo de Escenarios de Ganadería Bovina')
 st.markdown("""
 Esta herramienta permite comparar un escenario **Línea Base** con un **Escenario Alternativo**. 
-Modifica los parámetros en la barra lateral para configurar el Escenario Alternativo y observa el impacto en los indicadores clave y las proyecciones para el periodo 2025-2035.
+Modifica los parámetros en la barra lateral para configurar el Escenario Alternativo y observa el impacto en los indicadores clave y las proyecciones a 10 años.
 """)
 
 # --- BARRA LATERAL: CONTROLES PARA EL ESCENARIO ALTERNATIVO ---
@@ -178,7 +177,7 @@ base_results = run_simulation(base_params)
 alt_results = run_simulation(alt_params)
 
 # --- CÁLCULO Y VISUALIZACIÓN DE KPIs ---
-st.header('Indicadores Clave de Rendimiento (KPIs) al final del periodo (2035)')
+st.header('Indicadores Clave de Rendimiento (KPIs) al Año 10')
 
 base_emisiones_final = base_results['Emisiones_Totales_GEI'][-1]
 alt_emisiones_final = alt_results['Emisiones_Totales_GEI'][-1]
@@ -209,54 +208,39 @@ st.header('Visualización Comparativa de Escenarios')
 
 # --- CREACIÓN DE GRÁFICOS COMPARATIVOS ---
 fig = make_subplots(
-    rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+    rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.08,
     subplot_titles=('Población de Hembras', 'Población de Machos', 'Emisiones Totales de GEI', 'Intensidad de Emisiones')
 )
-# AJUSTE: Eje X de 2025 a 2035
-plot_years = (base_results['tiempo'] / 365) + 2025
+tiempo_en_años = base_results['tiempo'] / 365
 
-# --- Paleta de colores definida ---
-colors_hembras = {'Terneras': '#FF69B4', 'Novillas': '#C71585', 'Vacas': '#8B008B'}
-colors_machos = {'Terneros': '#1E90FF', 'Novillos': '#4169E1', 'Toros': '#000080'}
-color_emisiones = 'green'
-color_intensidad = 'firebrick'
+# Función auxiliar para añadir trazas
+def add_traces(fig, row, col, data_base, data_alt, name):
+    fig.add_trace(go.Scatter(x=tiempo_en_años, y=data_base, name=f'{name} (Base)', mode='lines', line=dict(color=f'rgba({np.random.randint(0,255)},{np.random.randint(0,255)},{np.random.randint(0,255)},0.6)', width=2)), row=row, col=col)
+    fig.add_trace(go.Scatter(x=tiempo_en_años, y=data_alt, name=f'{name} (Alt)', mode='lines', line=dict(color=f'rgba({np.random.randint(0,255)},{np.random.randint(0,255)},{np.random.randint(0,255)},1)', width=3, dash='dash')), row=row, col=col)
 
-# --- Gráfico 1: Hembras ---
-for cat, color in colors_hembras.items():
-    fig.add_trace(go.Scatter(x=plot_years, y=base_results[cat], name=f'{cat} (Base)', mode='lines', line=dict(color=color, width=2), legendgroup='1'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=plot_years, y=alt_results[cat], name=f'{cat} (Alt)', mode='lines', line=dict(color=color, width=3, dash='dash'), legendgroup='1'), row=1, col=1)
+# Gráfico 1: Hembras
+add_traces(fig, 1, 1, base_results['Terneras'], alt_results['Terneras'], 'Terneras')
+add_traces(fig, 1, 1, base_results['Novillas'], alt_results['Novillas'], 'Novillas')
+add_traces(fig, 1, 1, base_results['Vacas'], alt_results['Vacas'], 'Vacas')
 
-# --- Gráfico 2: Machos ---
-for cat, color in colors_machos.items():
-    fig.add_trace(go.Scatter(x=plot_years, y=base_results[cat], name=f'{cat} (Base)', mode='lines', line=dict(color=color, width=2), legendgroup='2'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=plot_years, y=alt_results[cat], name=f'{cat} (Alt)', mode='lines', line=dict(color=color, width=3, dash='dash'), legendgroup='2'), row=2, col=1)
+# Gráfico 2: Machos
+add_traces(fig, 2, 1, base_results['Terneros'], alt_results['Terneros'], 'Terneros')
+add_traces(fig, 2, 1, base_results['Novillos'], alt_results['Novillos'], 'Novillos')
+add_traces(fig, 2, 1, base_results['Toros'], alt_results['Toros'], 'Toros')
 
-# --- Gráfico 3: Emisiones ---
-# AJUSTE: Se plotea desde el índice 1 para evitar la línea vertical desde cero
-fig.add_trace(go.Scatter(x=plot_years[1:], y=base_results['Emisiones_Totales_GEI'][1:], name='Emisiones GEI (Base)', mode='lines', line=dict(color=color_emisiones, width=2), legendgroup='3'), row=3, col=1)
-fig.add_trace(go.Scatter(x=plot_years[1:], y=alt_results['Emisiones_Totales_GEI'][1:], name='Emisiones GEI (Alt)', mode='lines', line=dict(color=color_emisiones, width=3, dash='dash'), legendgroup='3'), row=3, col=1)
+# Gráfico 3: Emisiones
+fig.add_trace(go.Scatter(x=tiempo_en_años, y=base_results['Emisiones_Totales_GEI'], name='Emisiones GEI (Base)', mode='lines', line=dict(color='grey')), row=3, col=1)
+fig.add_trace(go.Scatter(x=tiempo_en_años, y=alt_results['Emisiones_Totales_GEI'], name='Emisiones GEI (Alt)', mode='lines', line=dict(color='green', dash='dash')), row=3, col=1)
 
-# --- Gráfico 4: Intensidad ---
-# AJUSTE: Se plotea desde el índice 1 para evitar la línea vertical desde cero
-fig.add_trace(go.Scatter(x=plot_years[1:], y=base_results['Intensidad_de_Emisiones'][1:], name='Intensidad (Base)', mode='lines', line=dict(color=color_intensidad, width=2), legendgroup='4'), row=4, col=1)
-fig.add_trace(go.Scatter(x=plot_years[1:], y=alt_results['Intensidad_de_Emisiones'][1:], name='Intensidad (Alt)', mode='lines', line=dict(color=color_intensidad, width=3, dash='dash'), legendgroup='4'), row=4, col=1)
+# Gráfico 4: Intensidad
+fig.add_trace(go.Scatter(x=tiempo_en_años, y=base_results['Intensidad_de_Emisiones'], name='Intensidad (Base)', mode='lines', line=dict(color='grey')), row=4, col=1)
+fig.add_trace(go.Scatter(x=tiempo_en_años, y=alt_results['Intensidad_de_Emisiones'], name='Intensidad (Alt)', mode='lines', line=dict(color='firebrick', dash='dash')), row=4, col=1)
 
-# --- AJUSTE: Diseño de la figura y leyendas ---
-fig.update_layout(
-    height=1200, 
-    template='plotly_white',
-    legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=1.02,
-        xanchor="center",
-        x=0.5
-    ),
-    legend_tracegroupgap=50 # Añade espacio entre los grupos de leyendas
-)
+# Diseño de la figura
+fig.update_layout(height=1000, template='plotly_white', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
 fig.update_yaxes(title_text="Número de Animales", row=1, col=1); fig.update_yaxes(title_text="Número de Animales", row=2, col=1)
 fig.update_yaxes(title_text="kg CO2-eq/día", row=3, col=1); fig.update_yaxes(title_text="kg CO2-eq / kg Carne", row=4, col=1)
-fig.update_xaxes(title_text="Año", row=4, col=1)
+fig.update_xaxes(title_text="Tiempo (Años)", row=4, col=1)
 st.plotly_chart(fig, use_container_width=True)
 
 # --- DESCARGA DE DATOS ---
@@ -269,40 +253,18 @@ df_alt = pd.DataFrame(alt_results)
 df_base = df_base.add_suffix('_Base')
 df_alt = df_alt.add_suffix('_Alternativo').drop(columns=['tiempo_Alternativo'])
 df_export = pd.concat([df_base, df_alt], axis=1)
-# AJUSTE: El índice del DataFrame exportado también será el año
-df_export['Año'] = (df_export['tiempo_Base'] / 365) + 2025
-df_export = df_export.drop(columns=['tiempo_Base']).set_index('Año')
+df_export['Año'] = df_export['tiempo_Base'] / 365
+df_export = df_export.set_index('Año')
 
-# Función para convertir a CSV
 @st.cache_data
 def convert_df_to_csv(df):
     return df.to_csv().encode('utf-8')
 
-# AJUSTE: Función para convertir a Excel
-@st.cache_data
-def convert_df_to_excel(df):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=True, sheet_name='Resultados_Simulacion')
-    processed_data = output.getvalue()
-    return processed_data
+csv = convert_df_to_csv(df_export)
 
-csv_data = convert_df_to_csv(df_export)
-excel_data = convert_df_to_excel(df_export)
-
-# Botones de descarga en columnas
-col1_dl, col2_dl = st.columns(2)
-with col1_dl:
-    st.download_button(
-        label="📥 Descargar datos como CSV",
-        data=csv_data,
-        file_name='resultados_simulacion_ganaderia.csv',
-        mime='text/csv',
-    )
-with col2_dl:
-    st.download_button(
-        label="📊 Descargar datos como Excel",
-        data=excel_data,
-        file_name='resultados_simulacion_ganaderia.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    )
+st.download_button(
+    label="Descargar datos como CSV",
+    data=csv,
+    file_name='resultados_simulacion_ganaderia.csv',
+    mime='text/csv',
+)
