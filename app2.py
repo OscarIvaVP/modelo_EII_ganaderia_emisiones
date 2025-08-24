@@ -81,7 +81,7 @@ def run_simulation(params):
     Factor_Emision_Ternero, Factor_Emision_Novillo, Factor_Emision_Toro = 0.5, 1.8, 2.8
     
     # Tiempos de maduración
-    Tiempo_Maduracion_Ternera = (Peso_Final_Ternera_H - Peso_Inicial_Ternera_H) / params['ganancia_peso_diario_ternera_h'] if params['ganancia_peso_diario_ternera_h'] > 0 else float('inf')
+    Tiempo_Maduracion_Ternera = (Peso_Final_Ternera_H - params['ganancia_peso_diario_ternera_h']) / params['ganancia_peso_diario_ternera_h'] if params['ganancia_peso_diario_ternera_h'] > 0 else float('inf')
     Tiempo_Maduracion_Novilla = (params['peso_final_novilla'] - params['peso_inicial_novilla']) / params['ganancia_peso_diario_novilla'] if params['ganancia_peso_diario_novilla'] > 0 else float('inf')
     Tiempo_Maduracion_Ternero_a_Novillo = (params['peso_final_ternero_m'] - params['peso_inicial_ternero_m']) / params['ganancia_peso_diario_ternero_m'] if params['ganancia_peso_diario_ternero_m'] > 0 else float('inf')
     Tiempo_Maduracion_Novillo_a_Toro = (params['peso_final_novillo_m'] - params['peso_inicial_novillo_m']) / params['ganancia_peso_diario_novillo_m'] if params['ganancia_peso_diario_novillo_m'] > 0 else float('inf')
@@ -228,8 +228,8 @@ def style_figure(fig, title, y_title, x_title=None, height=450, show_legend=True
             orientation="h",
             yanchor="bottom",
             y=1.02,
-            xanchor="center", # AJUSTE: Centrar la leyenda
-            x=0.5             # AJUSTE: Posicionar la leyenda en el centro
+            xanchor="right",
+            x=1
         ),
         showlegend=show_legend,
         margin=dict(t=80) # Aumentar margen superior para que el título y la leyenda no se solapen
