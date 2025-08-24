@@ -77,8 +77,8 @@ def run_simulation(params):
     Rendimiento_Canal_Novillas, Rendimiento_Canal_Vacas, Rendimiento_Canal_Toros = 0.53, 0.51, 0.55
     Peso_Inicial_Ternera_H, Peso_Final_Ternera_H = 28, 190
     Ratio_Toros_por_Vaca = 25
-    Factor_Emision_Ternera, Factor_Emision_Novilla, Factor_Emision_Vaca = 2.31, 3.68, 4.41
-    Factor_Emision_Ternero, Factor_Emision_Novillo, Factor_Emision_Toro = 2.50, 4.45, 6.06
+    Factor_Emision_Ternera, Factor_Emision_Novilla, Factor_Emision_Vaca = 0.5, 1.5, 2.5
+    Factor_Emision_Ternero, Factor_Emision_Novillo, Factor_Emision_Toro = 0.5, 1.8, 2.8
     
     # Tiempos de maduración
     Tiempo_Maduracion_Ternera = (Peso_Final_Ternera_H - Peso_Inicial_Ternera_H) / params['ganancia_peso_diario_ternera_h'] if params['ganancia_peso_diario_ternera_h'] > 0 else float('inf')
